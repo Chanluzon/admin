@@ -57,7 +57,8 @@ import {
   Refresh as RefreshIcon,
   BarChart as BarChartIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
