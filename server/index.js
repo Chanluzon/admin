@@ -26,15 +26,20 @@ admin.initializeApp({
 const app = express();
 
 // CORS configuration
-app.use(cors({
-  origin: true, // Allow all origins
+const corsOptions = {
+  origin: ['https://grabi-admin.netlify.app', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 
-// Pre-flight requests
-app.options('*', cors());
+// Enable CORS for all routes
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 

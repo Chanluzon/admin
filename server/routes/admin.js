@@ -4,6 +4,7 @@ const admin = require('firebase-admin');
 
 // Middleware to verify admin token
 const verifyAdminToken = (req, res, next) => {
+  // Skip token verification for login and health check
   if (req.path === '/login' || req.path === '/health') {
     return next();
   }
