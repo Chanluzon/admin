@@ -213,4 +213,31 @@ router.get('/usage', async (req, res) => {
   }
 });
 
+// Health check endpoint (no auth required)
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Admin routes are working' });
+});
+
+// Get all users (requires admin auth)
+router.get('/users', async (req, res) => {
+  try {
+    const listUsersResult = await admin.auth().listUsers();
+    res.json(listUsersResult.users);
+  } catch (error) {
+    console.error('Error listing users:', error);
+    res.status(500).json({ error: 'Failed to list users' });
+  }
+});
+
+// Get usage statistics (requires admin auth)
+router.get('/usage-stats', async (req, res) => {
+  try {
+    // Implement your usage statistics logic here
+    res.json({ message: 'Usage statistics endpoint' });
+  } catch (error) {
+    console.error('Error getting usage stats:', error);
+    res.status(500).json({ error: 'Failed to get usage statistics' });
+  }
+});
+
 module.exports = router; 

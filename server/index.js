@@ -1,8 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const adminRoutes = require('./routes/admin');
-require('dotenv').config();
 
 // Initialize Firebase Admin
 const serviceAccount = {
@@ -25,18 +25,20 @@ admin.initializeApp({
 
 const app = express();
 
-// Configure CORS
+// CORS configuration
 app.use(cors({
-  origin: [
-    /^http:\/\/localhost:\d+$/, // Allow any localhost port
-    'https://grabi-admin.netlify.app', // Allow Netlify domain
-    'https://*.netlify.app' // Allow all Netlify subdomains
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: ['https://grabi-admin.netlify.app', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -47,7 +49,7 @@ app.use((err, req, res, next) => {
 // Use admin routes
 app.use('/api/admin', adminRoutes);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 
