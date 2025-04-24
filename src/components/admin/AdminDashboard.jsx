@@ -50,6 +50,7 @@ import {
 import {
   Menu as MenuIcon,
   People as PeopleIcon,
+  Person as PersonIcon,
   ExitToApp as LogoutIcon,
   Add as AddIcon,
   Search as SearchIcon,
