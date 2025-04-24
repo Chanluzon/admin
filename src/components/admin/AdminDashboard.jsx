@@ -57,10 +57,7 @@ import {
   Refresh as RefreshIcon,
   BarChart as BarChartIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Person as PersonIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelCircleIcon
+  VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -88,7 +85,7 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://grabi-admin-api.onrender.com/api/admin';
+const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -487,21 +484,13 @@ const AdminDashboard = () => {
   const handleShowUsageStats = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      console.log('Admin token:', token);
-      console.log('API URL:', `${API_BASE_URL}/usage-stats`);
-      
-      const response = await fetch(`${API_BASE_URL}/usage-stats`, {
+      const response = await fetch(`${API_BASE_URL}/usage`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
         throw new Error('Failed to fetch usage statistics');
       }
 
@@ -632,7 +621,7 @@ const AdminDashboard = () => {
               {[
                 { title: 'Total Users', value: Object.keys(users).length, icon: <PeopleIcon />, color: 'primary' },
                 { title: 'Premium Users', value: Object.values(users).filter(user => user.accountType === 'premium').length, icon: <CheckCircleIcon />, color: 'success' },
-                { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <VisibilityIcon />, color: 'info' },
+                { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <AccessTimeIcon />, color: 'info' },
                 { title: 'Languages', value: new Set(Object.values(users).map(user => user.language)).size, icon: <LanguageIcon />, color: 'warning' }
               ].map((stat, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
