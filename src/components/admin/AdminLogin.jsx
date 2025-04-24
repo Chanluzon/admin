@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material';
 import './AdminLogin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/admin';
+const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -108,7 +108,7 @@ const AdminLogin = () => {
                 ),
               }}
             />
-            
+          
             <TextField
               className="form-field"
               label="Password"
@@ -136,15 +136,15 @@ const AdminLogin = () => {
                 ),
               }}
             />
-            
+
             <Button
-              type="submit"
+            type="submit"
               variant="contained"
               color="primary"
               fullWidth
               className="login-button"
-              disabled={loading}
-            >
+            disabled={loading}
+          >
               {loading ? <CircularProgress size={24} /> : 'Login'}
             </Button>
             

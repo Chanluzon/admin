@@ -48,25 +48,16 @@ import {
 import {
   Menu as MenuIcon,
   People as PeopleIcon,
+  ExitToApp as LogoutIcon,
   Add as AddIcon,
+  Search as SearchIcon,
+  MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Logout as LogoutIcon,
-  Dashboard as DashboardIcon,
-  Person as PersonIcon,
-  Language as LanguageIcon,
-  Translate as TranslateIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelCircleIcon,
-  AccessTime as AccessTimeIcon,
-  Email as EmailIcon,
+  Refresh as RefreshIcon,
   BarChart as BarChartIcon,
-  Timeline as TimelineIcon,
-  Star as StarIcon,
-  Search as SearchIcon,
-  LockReset as LockResetIcon
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -94,7 +85,7 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/admin';
+const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminDashboard = () => {
   const theme = useTheme();
