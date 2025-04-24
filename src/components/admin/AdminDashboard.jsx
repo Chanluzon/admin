@@ -85,7 +85,7 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -484,13 +484,21 @@ const AdminDashboard = () => {
   const handleShowUsageStats = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${API_BASE_URL}/usage`, {
+      console.log('Admin token:', token);
+      console.log('API URL:', `${API_BASE_URL}/usage-stats`);
+      
+      const response = await fetch(`${API_BASE_URL}/usage-stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error('Failed to fetch usage statistics');
       }
 
