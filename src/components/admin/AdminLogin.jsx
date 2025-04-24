@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material';
 import './AdminLogin.css';
 
-const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -43,6 +43,7 @@ const AdminLogin = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -56,7 +57,8 @@ const AdminLogin = () => {
       // Redirect to admin dashboard
       navigate('/admin');
     } catch (error) {
-      setError(error.message);
+      console.error('Login error:', error);
+      setError(error.message || 'Failed to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
