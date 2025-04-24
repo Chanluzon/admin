@@ -27,11 +27,14 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://grabi-admin.netlify.app', 'http://localhost:5173'],
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Pre-flight requests
+app.options('*', cors());
 
 app.use(express.json());
 
@@ -42,8 +45,11 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: err.message 
+  });
 });
 
 // Use admin routes

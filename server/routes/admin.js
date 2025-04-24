@@ -4,59 +4,55 @@ const admin = require('firebase-admin');
 
 // Middleware to verify admin token
 const verifyAdminToken = (req, res, next) => {
+  if (req.path === '/login' || req.path === '/health') {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'No authorization header' });
   }
   
   const token = authHeader.split(' ')[1];
-  // In a real application, you would verify the token here
-  // For now, we'll just check if it exists
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'No token provided' });
   }
   
   next();
 };
 
-// Apply middleware to all routes except login
-router.use((req, res, next) => {
-  if (req.path === '/login') {
-    return next();
-  }
-  verifyAdminToken(req, res, next);
+// Apply middleware to all routes
+router.use(verifyAdminToken);
+
+// Health check endpoint (no auth required)
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Admin routes are working' });
 });
 
-// Create new user
-router.post('/users', async (req, res) => {
+// Admin login
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Create the user in Firebase Authentication
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      emailVerified: false
-    });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
 
-    // Create the user in Realtime Database
-    const db = admin.database();
-    const userRef = db.ref(`users/${userRecord.uid}`);
-    await userRef.set({
-      userId: userRecord.uid,
-      email: email,
-      accountType: 'free',
-      username: email.split('@')[0],
-      status: 'offline',
-      language: 'English',
-      translator: 'google',
-      createdAt: new Date().toISOString(),
-      lastLoginDate: new Date().toISOString()
-    });
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-    res.json({ message: 'User created successfully', userId: userRecord.uid });
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
+    res.json({ 
+      token,
+      message: 'Login successful'
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error during login' });
   }
 });
 
@@ -65,113 +61,16 @@ router.get('/users', async (req, res) => {
   try {
     const db = admin.database();
     const snapshot = await db.ref('users').once('value');
-    res.json(snapshot.val());
+    const users = snapshot.val() || {};
+    res.json(Object.values(users));
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update user
-router.put('/users/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const userData = req.body;
-    delete userData.userId; // Remove userId from update data
-
-    const db = admin.database();
-    const userRef = db.ref(`users/${userId}`);
-    await userRef.update(userData);
-    
-    res.json({ message: 'User updated successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Delete user
-router.delete('/users/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    // Delete user from Authentication
-    await admin.auth().deleteUser(userId);
-    
-    // Delete user from Realtime Database
-    const db = admin.database();
-    const userRef = db.ref(`users/${userId}`);
-    await userRef.remove();
-    
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Admin login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Verify admin credentials (you should implement proper admin authentication)
-    // For now, we'll use a simple check against environment variables
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-
-    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Generate a simple token (in production, use JWT or similar)
-    const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
-    
-    res.json({ token });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Admin logout
-router.post('/logout', (req, res) => {
-  try {
-    // In a real application, you might want to invalidate the token on the server
-    // For now, we'll just return a success message
-    res.json({ message: 'Logged out successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Reset password
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    // Get the user by email
-    const userRecord = await admin.auth().getUserByEmail(email);
-    
-    // Generate a random temporary password
-    const tempPassword = Math.random().toString(36).slice(-8);
-    
-    // Update the user's password to the temporary password
-    await admin.auth().updateUser(userRecord.uid, {
-      password: tempPassword
-    });
-    
-    // Send a custom email with the temporary password
-    // Note: In a production environment, you would use a proper email service
-    console.log(`Password reset email would be sent to ${email} with temporary password: ${tempPassword}`);
-    
-    res.json({ 
-      message: 'Password reset email sent successfully'
-    });
-  } catch (error) {
-    console.error('Error sending password reset email:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
 // Get usage statistics
-router.get('/usage', async (req, res) => {
+router.get('/usage-stats', async (req, res) => {
   try {
     const db = admin.database();
     const usersSnapshot = await db.ref('users').once('value');
@@ -186,7 +85,6 @@ router.get('/usage', async (req, res) => {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       
-      // Count users who logged in on this date
       const usersLoggedIn = Object.values(users).filter(user => {
         if (!user.lastLoginDate) return false;
         const loginDate = new Date(user.lastLoginDate).toISOString().split('T')[0];
@@ -205,38 +103,12 @@ router.get('/usage', async (req, res) => {
     }
 
     res.json({
-      dailyLoginUsage
+      dailyLoginUsage,
+      totalUsers: Object.keys(users).length
     });
   } catch (error) {
-    console.error('Error fetching usage statistics:', error);
+    console.error('Error fetching usage stats:', error);
     res.status(500).json({ error: 'Failed to fetch usage statistics' });
-  }
-});
-
-// Health check endpoint (no auth required)
-router.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Admin routes are working' });
-});
-
-// Get all users (requires admin auth)
-router.get('/users', async (req, res) => {
-  try {
-    const listUsersResult = await admin.auth().listUsers();
-    res.json(listUsersResult.users);
-  } catch (error) {
-    console.error('Error listing users:', error);
-    res.status(500).json({ error: 'Failed to list users' });
-  }
-});
-
-// Get usage statistics (requires admin auth)
-router.get('/usage-stats', async (req, res) => {
-  try {
-    // Implement your usage statistics logic here
-    res.json({ message: 'Usage statistics endpoint' });
-  } catch (error) {
-    console.error('Error getting usage stats:', error);
-    res.status(500).json({ error: 'Failed to get usage statistics' });
   }
 });
 
