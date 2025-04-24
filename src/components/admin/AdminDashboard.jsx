@@ -58,7 +58,9 @@ import {
   BarChart as BarChartIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelCircleIcon
 } from '@mui/icons-material';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
@@ -630,7 +632,7 @@ const AdminDashboard = () => {
               {[
                 { title: 'Total Users', value: Object.keys(users).length, icon: <PeopleIcon />, color: 'primary' },
                 { title: 'Premium Users', value: Object.values(users).filter(user => user.accountType === 'premium').length, icon: <CheckCircleIcon />, color: 'success' },
-                { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <AccessTimeIcon />, color: 'info' },
+                { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <VisibilityIcon />, color: 'info' },
                 { title: 'Languages', value: new Set(Object.values(users).map(user => user.language)).size, icon: <LanguageIcon />, color: 'warning' }
               ].map((stat, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
