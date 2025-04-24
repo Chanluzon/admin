@@ -43,7 +43,9 @@ import {
   useTheme,
   alpha,
   Menu,
-  InputAdornment
+  InputAdornment,
+  ThemeProvider,
+  createTheme
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -85,12 +87,23 @@ ChartJS.register(
   Legend
 );
 
+// Create a theme instance
+const theme = createTheme({
+  palette: {
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff'
+    }
+  }
+});
+
 const API_BASE_URL = 'https://grabi-admin-api.onrender.com/api/admin';
 
 const AdminDashboard = () => {
-  const theme = useTheme();
-  const [users, setUsers] = useState({});
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [users, setUsers] = useState({});
   const [editingUser, setEditingUser] = useState(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -128,39 +141,37 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          navigate('/admin/login');
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/users`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!response.ok) throw new Error('Failed to fetch users');
-        const data = await response.json();
-        setUsers(data || {});
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        setLoading(false);
-        setSnackbar({
-          open: true,
-          message: 'Error fetching users: ' + error.message,
-          severity: 'error'
-        });
-      }
-    };
-
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
     fetchUsers();
   }, [navigate]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const data = await response.json();
+      setUsers(data || {});
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setLoading(false);
+      setSnackbar({
+        open: true,
+        message: 'Error fetching users: ' + error.message,
+        severity: 'error'
+      });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -514,259 +525,183 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <Box className="loading-container">
-        <CircularProgress size={60} thickness={4} />
-        <Typography variant="h6" mt={2}>Loading users data...</Typography>
-      </Box>
-    );
-  }
-
-  if (!users || Object.keys(users).length === 0) {
-    return (
-      <Box className="empty-state-container">
-        <Typography variant="h5" gutterBottom>No users found</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />}
-          onClick={() => setShowAddUser(true)}
-        >
-          Add New User
-        </Button>
+        <CircularProgress />
+        <Typography variant="h6" mt={2}>Loading...</Typography>
       </Box>
     );
   }
 
   return (
-    <Box className="admin-container">
-      <AppBar position="fixed" sx={{ width: '100%' }}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Admin Dashboard
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar sx={{ bgcolor: theme.palette.secondary.main, mr: 2 }}>
-              <PersonIcon />
-            </Avatar>
-            <Button 
-              color="inherit" 
-              startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-            >
+    <ThemeProvider theme={theme}>
+      <Box className="admin-container">
+        <AppBar position="fixed">
+          <Toolbar>
+            <IconButton edge="start" color="inherit" aria-label="menu">
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" style={{ flexGrow: 1 }}>
+              Admin Dashboard
+            </Typography>
+            <Button color="inherit" onClick={handleLogout}>
               Logout
             </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            position: 'fixed',
-            top: 64,
-            left: 0,
-            width: 240,
-            height: 'calc(100vh - 64px)',
-            boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)',
-            border: 'none',
-            backgroundColor: theme.palette.background.paper,
-            transition: theme.transitions.create('transform', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          },
-        }}
-      >
-        <Box sx={{ overflow: 'auto', p: 2 }}>
-          <List>
-            <ListItem 
-              button 
-              onClick={() => {
-                setDrawerOpen(false);
-                navigate('/admin');
-              }}
-            >
-              <ListItemIcon>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText primary="Users" />
-            </ListItem>
-            <ListItem button onClick={handleShowUsageStats}>
-              <ListItemIcon>
-                <BarChartIcon />
-              </ListItemIcon>
-              <ListItemText primary="Usage Statistics" />
-            </ListItem>
-          </List>
-          <Divider />
-        </Box>
-      </Drawer>
-
-      <Box component="main" className="main-content">
-        <Box className="content-wrapper">
-          <Box display="flex" alignItems="center" mb={2} gap={2}>
-            <Grid container spacing={1} sx={{ flexGrow: 1 }}>
-              {[
-                { title: 'Total Users', value: Object.keys(users).length, icon: <PeopleIcon />, color: 'primary' },
-                { title: 'Premium Users', value: Object.values(users).filter(user => user.accountType === 'premium').length, icon: <CheckCircleIcon />, color: 'success' },
-                { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <AccessTimeIcon />, color: 'info' },
-                { title: 'Languages', value: new Set(Object.values(users).map(user => user.language)).size, icon: <LanguageIcon />, color: 'warning' }
-              ].map((stat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <Card 
-                    sx={{ 
-                      height: '100%',
-                      borderLeft: `4px solid ${theme.palette[stat.color].main}`,
-                      borderRadius: 1
-                    }}
-                  >
-                    <CardContent sx={{ p: 1.5 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Box display="flex" alignItems="center">
-                          <Box 
-                            sx={{ 
-                              backgroundColor: theme.palette[stat.color].light,
-                              borderRadius: '50%',
-                              p: 1,
-                              mr: 1
-                            }}
-                          >
-                            {stat.icon}
+          </Toolbar>
+        </AppBar>
+        
+        <Box className="main-content">
+          <Box className="content-wrapper">
+            <Box display="flex" alignItems="center" mb={2} gap={2}>
+              <Grid container spacing={1} sx={{ flexGrow: 1 }}>
+                {[
+                  { title: 'Total Users', value: Object.keys(users).length, icon: <PeopleIcon />, color: 'primary' },
+                  { title: 'Premium Users', value: Object.values(users).filter(user => user.accountType === 'premium').length, icon: <CheckCircleIcon />, color: 'success' },
+                  { title: 'Online Users', value: Object.values(users).filter(user => user.status === 'online').length, icon: <AccessTimeIcon />, color: 'info' },
+                  { title: 'Languages', value: new Set(Object.values(users).map(user => user.language)).size, icon: <LanguageIcon />, color: 'warning' }
+                ].map((stat, index) => (
+                  <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        borderLeft: `4px solid ${theme.palette[stat.color].main}`,
+                        borderRadius: 1
+                      }}
+                    >
+                      <CardContent sx={{ p: 1.5 }}>
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                          <Box display="flex" alignItems="center">
+                            <Box 
+                              sx={{ 
+                                backgroundColor: theme.palette[stat.color].light,
+                                borderRadius: '50%',
+                                p: 1,
+                                mr: 1
+                              }}
+                            >
+                              {stat.icon}
+                            </Box>
+                            <Typography variant="body2" color="textSecondary">
+                              {stat.title}
+                            </Typography>
                           </Box>
-                          <Typography variant="body2" color="textSecondary">
-                            {stat.title}
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {stat.value}
                           </Typography>
                         </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {stat.value}
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              startIcon={<AddIcon />}
-              onClick={() => setShowAddUser(true)}
-              size="small"
-            >
-              Add New User
-            </Button>
-            <TextField
-              size="small"
-              placeholder="Search by email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-field"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-
-          <TableContainer 
-            component={Paper} 
-            className="table-container"
-          >
-            <Table size="small" stickyHeader>
-              <TableHead className="table-header">
-                <TableRow>
-                  <TableCell>User ID</TableCell>
-                  <TableCell>Account Type</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Language</TableCell>
-                  <TableCell>Translator</TableCell>
-                  <TableCell>Created At</TableCell>
-                  <TableCell>Last Login</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredUsers.map(([userId, user]) => (
-                  <TableRow 
-                    key={userId} 
-                    hover
-                    onContextMenu={(e) => handleContextMenu(e, userId, user)}
-                    sx={{ 
-                      cursor: 'context-menu',
-                      '&:nth-of-type(odd)': {
-                        backgroundColor: theme.palette.grey[50]
-                      }
-                    }}
-                  >
-                    <TableCell>{userId}</TableCell>
-                    <TableCell>
-                      {getAccountTypeChip(user.accountType)}
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <EmailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {user.email}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusChip(user.status)}
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <LanguageIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {user.language}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <TranslateIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {user.translator}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <AccessTimeIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {formatDate(user.createdAt)}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <AccessTimeIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {formatDate(user.lastLoginDate)}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                      </CardContent>
+                    </Card>
+                  </Grid>
                 ))}
-                {filteredUsers.length === 0 && (
+              </Grid>
+            </Box>
+
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                startIcon={<AddIcon />}
+                onClick={() => setShowAddUser(true)}
+                size="small"
+              >
+                Add New User
+              </Button>
+              <TextField
+                size="small"
+                placeholder="Search by email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-field"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+
+            <TableContainer 
+              component={Paper} 
+              className="table-container"
+            >
+              <Table size="small" stickyHeader>
+                <TableHead className="table-header">
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        No users found matching your search
-                      </Typography>
-                    </TableCell>
+                    <TableCell>User ID</TableCell>
+                    <TableCell>Account Type</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Language</TableCell>
+                    <TableCell>Translator</TableCell>
+                    <TableCell>Created At</TableCell>
+                    <TableCell>Last Login</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {filteredUsers.map(([userId, user]) => (
+                    <TableRow 
+                      key={userId} 
+                      hover
+                      onContextMenu={(e) => handleContextMenu(e, userId, user)}
+                      sx={{ 
+                        cursor: 'context-menu',
+                        '&:nth-of-type(odd)': {
+                          backgroundColor: theme.palette.grey[50]
+                        }
+                      }}
+                    >
+                      <TableCell>{userId}</TableCell>
+                      <TableCell>
+                        {getAccountTypeChip(user.accountType)}
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <EmailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          {user.email}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusChip(user.status)}
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <LanguageIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          {user.language}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <TranslateIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          {user.translator}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <AccessTimeIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          {formatDate(user.createdAt)}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <AccessTimeIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          {formatDate(user.lastLoginDate)}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          No users found matching your search
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Box>
       </Box>
 
@@ -911,7 +846,7 @@ const AdminDashboard = () => {
                     ) : (
                       <Typography variant="body2" color="textSecondary" align="center">
                         No login data available for chart
-                    </Typography>
+                      </Typography>
                     )}
                   </Box>
                 </CardContent>
@@ -1041,7 +976,7 @@ const AdminDashboard = () => {
                                       <EmailIcon fontSize="small" sx={{ mr: 0.5, color: 'text.secondary', fontSize: '0.875rem' }} />
                                       <Typography variant="body2" noWrap sx={{ maxWidth: 100 }}>
                                         {user.email}
-                    </Typography>
+                                      </Typography>
                                       {user.accountType === 'premium' && (
                                         <Chip 
                                           label="P" 
@@ -1167,7 +1102,7 @@ const AdminDashboard = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </ThemeProvider>
   );
 };
 
