@@ -41,9 +41,11 @@ const AdminLogin = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include'
+        credentials: 'include',
+        mode: 'cors'
       });
 
       if (!response.ok) {
